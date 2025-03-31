@@ -32,6 +32,23 @@ DEALINGS IN THE SOFTWARE.
 
 namespace enum_reflect
 {
+  namespace detail
+  {
+    template<bool B, class T = int>
+    struct enable_if {};
+
+    template<class T>
+    struct enable_if<true, T> { typedef T type; };
+
+    static size_t substring_size(char const* str, char start_char, size_t start_offset)
+    {
+      char const* start = strchr(str, start_char) + start_offset + 1; // 1 for next pos
+      char const* end = strchr(str, '>');
+
+      return end - start;
+    }
+  }
+
   template<typename T, T>
   bool value_exists()
   {
@@ -43,25 +60,19 @@ namespace enum_reflect
   template<typename T>
   size_t name_size()
   {
-    const char* start = strchr(__FUNCSIG__, '<') + 6; // 1 for next pos + 5 for enum + 1 for space
-    const char* end = strchr(__FUNCSIG__, '>');
-
-    return end - start;
+    return detail::substring_size(__FUNCSIG__, '<', 5); // 4 for enum + 1 for space
   }
 
   template<typename T>
   const char* name()
   {
-    return strchr(__FUNCSIG__, '<') + 6; // 1 for next pos + 5 for enum + 1 for space
+    return strchr(__FUNCSIG__, '<') + 6; // 1 for next pos + 4 for enum + 1 for space
   }
 
   template<typename T, T>
   size_t value_size()
   {
-    const char* start = strchr(__FUNCSIG__, ',') + 1; // 1 for next pos
-    const char* end = strchr(__FUNCSIG__, '>');
-
-    return end - start;
+    return detail::substring_size(__FUNCSIG__, ',', 0);
   }
 
   template<typename T, T>
@@ -70,13 +81,7 @@ namespace enum_reflect
     return strchr(__FUNCSIG__, ',') + 1; // 1 for next pos 
   }
 
-  template<bool B, class T = int>
-  struct enable_if {};
-
-  template<class T>
-  struct enable_if<true, T> { typedef T type; };
-
-  template<typename T, size_t Max = 100, size_t Index = 0, typename enable_if<(Index <= Max)>::type = true>
+  template<typename T, size_t Max = 100, size_t Index = 0, typename detail::enable_if<(Index <= Max)>::type = true>
   T from_string(char const* str, T default_value)
   {
     if (value_exists<T, static_cast<T>(Index)>())
@@ -88,13 +93,14 @@ namespace enum_reflect
     return default_value;
   }
 
-  template<typename T, size_t Max = 100, size_t Index = 0, typename enable_if<(Index > Max)>::type = true>
+  template<typename T, size_t Max = 100, size_t Index = 0, typename detail::enable_if<(Index > Max)>::type = true>
   T from_string(char const* str, T default_value)
   {
-    std::terminate();
+    if (value_exists<T, static_cast<T>(Index)>())
+      std::terminate();
   }
 
-  template<typename T, typename Container, size_t Max = 100, size_t Index = 0, typename enable_if<(Index <= Max)>::type = true>
+  template<typename T, typename Container, size_t Max = 100, size_t Index = 0, typename detail::enable_if<(Index <= Max)>::type = true>
   void stringify(Container& items)
   {
     if (value_exists<T, static_cast<T>(Index)>())
@@ -105,10 +111,11 @@ namespace enum_reflect
     }
   }
 
-  template<typename T, typename Container, size_t Max = 100, size_t Index = 0, typename enable_if<(Index > Max)>::type = true>
+  template<typename T, typename Container, size_t Max = 100, size_t Index = 0, typename detail::enable_if<(Index > Max)>::type = true>
   void stringify(Container& items)
   {
-    std::terminate();
+    if (value_exists<T, static_cast<T>(Index)>())
+      std::terminate();
   }
 }
 
