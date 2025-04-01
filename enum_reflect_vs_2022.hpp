@@ -39,11 +39,13 @@ namespace enum_reflect
       return str;
     }
 
-    template<bool B, class T = int>
-    struct enable_if {};
+    consteval size_t substring_size(char const* str, char start_char, size_t start_offset)
+    {
+      char const* start = detail::char_pos(str, start_char) + start_offset + 1; // 1 for next pos
+      char const* end = detail::char_pos(str, '>');
 
-    template<class T>
-    struct enable_if<true, T> { typedef T type; };
+      return end - start;
+    }
   }
 
   template<typename T, T>
@@ -57,25 +59,19 @@ namespace enum_reflect
   template<typename T>
   consteval size_t name_size()
   {
-    const char* start = detail::char_pos(__FUNCSIG__, '<') + 6; // 1 for next pos + 5 for enum + 1 for space
-    const char* end = detail::char_pos(__FUNCSIG__, '>');
-
-    return end - start;
+    return detail::substring_size(__FUNCSIG__, '<', 5); // 4 for enum + 1 for space
   }
 
   template<typename T>
   const char* name()
   {
-    return detail::char_pos(__FUNCSIG__, '<') + 6; // 1 for next pos + 5 for enum + 1 for space
+    return detail::char_pos(__FUNCSIG__, '<') + 6; // 1 for next pos + 4 for enum + 1 for space
   }
 
   template<typename T, T>
   consteval size_t value_size()
   {
-    const char* start = detail::char_pos(__FUNCSIG__, ',') + name_size<T>() + 3; // 1 for next post + enum_name_size + 2 for ::
-    const char* end = detail::char_pos(__FUNCSIG__, '>');
-
-    return end - start;
+    return detail::substring_size(__FUNCSIG__, ',', name_size<T>() + 2); // 2 for ::
   }
 
   template<typename T, T>
@@ -84,41 +80,29 @@ namespace enum_reflect
     return detail::char_pos(__FUNCSIG__, ',') + name_size<T>() + 3; // 1 for next post + enum_name_size + 2 for ::
   }
 
-  template<typename T, size_t Index = 0, typename detail::enable_if<value_exists<T, static_cast<T>(Index + 1)>() == false>::type = true>
-  T from_string(char const* str, T default_value)
-  {
-    if (strncmp(value<T, static_cast<T>(Index)>(), str, value_size<T, static_cast<T>(Index)>()) == 0)
-      return static_cast<T>(Index);
-    return default_value;
-  }
-
-  template<typename T, size_t Index = 0, typename detail::enable_if<value_exists<T, static_cast<T>(Index + 1)>()>::type = true>
+  template<typename T, size_t Index = 0>
   T from_string(char const* str, T default_value)
   {
     if (value_exists<T, static_cast<T>(Index)>())
     {
       if (strncmp(value<T, static_cast<T>(Index)>(), str, value_size<T, static_cast<T>(Index)>()) == 0)
         return static_cast<T>(Index);
-      return from_string<T, Index + 1>(str, default_value);
+
+      if constexpr (value_exists<T, static_cast<T>(Index + 1)>())
+        return from_string<T, Index + 1>(str, default_value);
     }
     return default_value;
   }
 
-  template<typename T, typename Container, size_t Index = 0, typename detail::enable_if<value_exists<T, static_cast<T>(Index + 1)>() == false>::type = true>
-  void stringify(Container& items)
-  {
-    if (value_exists<T, static_cast<T>(Index)>())
-      items.emplace_back(value<T, static_cast<T>(Index)>(), value_size<T, static_cast<T>(Index)>());
-  }
-
-  template<typename T, typename Container, size_t Index = 0, typename detail::enable_if<value_exists<T, static_cast<T>(Index + 1)>()>::type = true>
+  template<typename T, typename Container, size_t Index = 0>
   void stringify(Container& items)
   {
     if (value_exists<T, static_cast<T>(Index)>())
     {
       items.emplace_back(value<T, static_cast<T>(Index)>(), value_size<T, static_cast<T>(Index)>());
 
-      stringify<T, Container, Index + 1>(items);
+      if constexpr (value_exists<T, static_cast<T>(Index + 1)>())
+        stringify<T, Container, Index + 1>(items);
     }
   }
 }
