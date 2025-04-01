@@ -105,7 +105,7 @@ namespace enum_reflect
   {
     if (value_exists<T, static_cast<T>(Index)>())
     {
-      items.emplace_back(value<T, static_cast<T>(Index)>(), value_size<T, static_cast<T>(Index)>());
+      items.push_back(typename Container::value_type{ value<T, static_cast<T>(Index)>(), value_size<T, static_cast<T>(Index)>() });
 
       stringify<T, Container, Max, Index + 1>(items);
     }

@@ -63,7 +63,7 @@ namespace enum_reflect
   }
 
   template<typename T>
-  const char* name()
+  consteval const char* name()
   {
     return detail::char_pos(__FUNCSIG__, '<') + 6; // 1 for next pos + 4 for enum + 1 for space
   }
@@ -75,7 +75,7 @@ namespace enum_reflect
   }
 
   template<typename T, T>
-  const char* value()
+  consteval const char* value()
   {
     return detail::char_pos(__FUNCSIG__, ',') + name_size<T>() + 3; // 1 for next post + enum_name_size + 2 for ::
   }
@@ -99,7 +99,7 @@ namespace enum_reflect
   {
     if (value_exists<T, static_cast<T>(Index)>())
     {
-      items.emplace_back(value<T, static_cast<T>(Index)>(), value_size<T, static_cast<T>(Index)>());
+      items.push_back(typename Container::value_type{ value<T, static_cast<T>(Index)>(), value_size<T, static_cast<T>(Index)>() });
 
       if constexpr (value_exists<T, static_cast<T>(Index + 1)>())
         stringify<T, Container, Index + 1>(items);
