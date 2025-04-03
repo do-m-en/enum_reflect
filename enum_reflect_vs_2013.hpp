@@ -29,6 +29,8 @@ DEALINGS IN THE SOFTWARE.
 
 #include <cstring>
 #include <exception>
+#include <string>
+#include <vector>
 
 namespace enum_reflect
 {
@@ -81,40 +83,67 @@ namespace enum_reflect
     return strchr(__FUNCSIG__, ',') + 1; // 1 for next pos 
   }
 
-  template<typename T, size_t Max = 100, size_t Index = 0, typename detail::enable_if<(Index <= Max)>::type = true>
+  template
+  <
+    typename T,
+    T Min = static_cast<T>(0),
+    T Max = static_cast<T>(100),
+    typename detail::enable_if<(Min <= Max)>::type = true
+  >
   T from_string(char const* str, T default_value)
   {
-    if (value_exists<T, static_cast<T>(Index)>())
+    if (value_exists<T, Min>())
     {
-      if (strncmp(value<T, static_cast<T>(Index)>(), str, value_size<T, static_cast<T>(Index)>()) == 0)
-        return static_cast<T>(Index);
-      return from_string<T, Max, Index + 1>(str, default_value);
+      if (strncmp(value<T, Min>(), str, value_size<T, Min>()) == 0)
+        return Min;
+      return from_string<T, static_cast<T>(static_cast<int>(Min) + 1), Max>(str, default_value);
     }
     return default_value;
   }
 
-  template<typename T, size_t Max = 100, size_t Index = 0, typename detail::enable_if<(Index > Max)>::type = true>
+  template
+  <
+    typename T,
+    T Min = static_cast<T>(0),
+    T Max = static_cast<T>(100),
+    typename detail::enable_if<(Min > Max)>::type = true
+  >
   T from_string(char const* str, T default_value)
   {
-    if (value_exists<T, static_cast<T>(Index)>())
+    if (value_exists<T, Min>())
       std::terminate();
+    return default_value;
   }
 
-  template<typename T, typename Container, size_t Max = 100, size_t Index = 0, typename detail::enable_if<(Index <= Max)>::type = true>
+  template
+  <
+    typename T,
+    T Min = static_cast<T>(0),
+    T Max = static_cast<T>(100),
+    typename Container = std::vector<std::string>,
+    typename detail::enable_if<(Min <= Max)>::type = true
+  >
   void stringify(Container& items)
   {
-    if (value_exists<T, static_cast<T>(Index)>())
+    if (value_exists<T, Min>())
     {
-      items.push_back(typename Container::value_type{ value<T, static_cast<T>(Index)>(), value_size<T, static_cast<T>(Index)>() });
+      items.push_back(typename Container::value_type{ value<T, Min>(), value_size<T, Min>() });
 
-      stringify<T, Container, Max, Index + 1>(items);
+      stringify<T, static_cast<T>(static_cast<int>(Min)+1), Max>(items);
     }
   }
 
-  template<typename T, typename Container, size_t Max = 100, size_t Index = 0, typename detail::enable_if<(Index > Max)>::type = true>
+  template
+  <
+    typename T,
+    T Min = static_cast<T>(0),
+    T Max = static_cast<T>(100),
+    typename Container = std::vector<std::string>,
+    typename detail::enable_if<(Min > Max)>::type = true
+  >
   void stringify(Container& items)
   {
-    if (value_exists<T, static_cast<T>(Index)>())
+    if (value_exists<T, Min>())
       std::terminate();
   }
 }

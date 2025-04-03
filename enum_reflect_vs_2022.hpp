@@ -27,6 +27,9 @@ DEALINGS IN THE SOFTWARE.
 #ifndef enum_reflect_vs_2022_hpp_included
 #define enum_reflect_vs_2022_hpp_included
 
+#include <string_view>
+#include <vector>
+
 namespace enum_reflect
 {
   namespace detail
@@ -80,29 +83,29 @@ namespace enum_reflect
     return detail::char_pos(__FUNCSIG__, ',') + name_size<T>() + 3; // 1 for next post + enum_name_size + 2 for ::
   }
 
-  template<typename T, size_t Index = 0>
+  template<typename T, T Min = static_cast<T>(0)>
   T from_string(char const* str, T default_value)
   {
-    if (value_exists<T, static_cast<T>(Index)>())
+    if (value_exists<T, Min>())
     {
-      if (strncmp(value<T, static_cast<T>(Index)>(), str, value_size<T, static_cast<T>(Index)>()) == 0)
-        return static_cast<T>(Index);
+      if (strncmp(value<T, Min>(), str, value_size<T, Min>()) == 0)
+        return Min;
 
-      if constexpr (value_exists<T, static_cast<T>(Index + 1)>())
-        return from_string<T, Index + 1>(str, default_value);
+      if constexpr (value_exists<T, static_cast<T>(static_cast<int>(Min) + 1)>())
+        return from_string<T, static_cast<T>(static_cast<int>(Min) + 1)>(str, default_value);
     }
     return default_value;
   }
 
-  template<typename T, typename Container, size_t Index = 0>
+  template<typename T, T Min = static_cast<T>(0), typename Container = std::vector<std::string_view>>
   void stringify(Container& items)
   {
-    if (value_exists<T, static_cast<T>(Index)>())
+    if (value_exists<T, Min>())
     {
-      items.push_back(typename Container::value_type{ value<T, static_cast<T>(Index)>(), value_size<T, static_cast<T>(Index)>() });
+      items.push_back(typename Container::value_type{ value<T, Min>(), value_size<T, Min>() });
 
-      if constexpr (value_exists<T, static_cast<T>(Index + 1)>())
-        stringify<T, Container, Index + 1>(items);
+      if constexpr (value_exists<T, static_cast<T>(static_cast<int>(Min) + 1)>())
+        stringify<T, static_cast<T>(static_cast<int>(Min) + 1)>(items);
     }
   }
 }
